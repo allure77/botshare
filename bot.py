@@ -59,7 +59,7 @@ async def price(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     Если тикер не указан — выводит стоимость SOL → USDC
     """
     token = ctx.args[0].upper() if ctx.args else "SOL"
-    url = f"https://quote-api.jup.ag/v6/price?ids={token}"
+    url = f"https://price.jup.ag/v6/price?ids={token}"
 
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
