@@ -35,7 +35,6 @@ def main() -> None:
     app = (
         ApplicationBuilder()
         .token(TOKEN)
-        .updater(None)           # <-- disables polling mode
         .build()
     )
 
