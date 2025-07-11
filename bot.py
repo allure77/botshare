@@ -52,31 +52,46 @@ async def help_cmd(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
         "/price [TICKER] – цена токена в USDC"
     )
 
-
 async def price(update: Update, ctx: ContextTypes.DEFAULT_TYPE) -> None:
     """
-    /price  [TICKER]
-    Если тикер не указан — выводит стоимость SOL → USDC
+    /price [TICKER]
+    Показывает цену токена в USDC через CoinGecko.
+    Поддерживаемые тикеры: SOL, JUP, ETH.
     """
+    # 1) Получаем тикер из аргументов
     token = ctx.args[0].upper() if ctx.args else "SOL"
-    url = f"https://price.jup.ag/v6/price?ids={token}"
 
+    # 2) Сопоставляем с CoinGecko ID
+    id_map = {
+        "SOL": "solana",
+        "JUP": "jupiter",
+        "ETH": "ethereum",
+    }
+    cg_id = id_map.get(token)
+    if not cg_id:
+        await update.message.reply_text(
+            f"⚠️ Неподдерживаемый тикер '{token}'.\n"
+            "Поддерживаем: " + ", ".join(id_map.keys())
+        )
+        return
+
+    # 3) Делаем запрос к CoinGecko
+    url = f"https://api.coingecko.com/api/v3/simple/price?ids={cg_id}&vs_currencies=usd"
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             r = await client.get(url)
             r.raise_for_status()
             data = r.json()
     except Exception as e:
-        logging.warning("Price API error: %s", e)
+        logging.warning("CoinGecko API error: %s", e)
         await update.message.reply_text("⚠️ API недоступен, попробуйте позже.")
         return
 
-    if token not in data["data"]:
-        await update.message.reply_text(f"⚠️ Токен '{token}' не найден.")
-        return
+    # 4) Извлекаем цену и отвечаем
+    price_usd = data[cg_id]["usd"]
+    await update.message.reply_text(f"1 {token} ≈ {price_usd:,.2f} USD")
 
-    price_usdc = data["data"][token]["price"]
-    await update.message.reply_text(f"1 {token} ≈ {price_usdc:,.2f} USDC")
+
 
 # -----------------------------------------------------------
 # 3. Точка входа
